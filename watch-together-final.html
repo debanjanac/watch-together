@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Watch Together — BFII HUD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- HUD-esque typefaces -->
+  <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+/* ====== THEME: Star Wars Battlefront II (Amber HUD) ====== */
+:root{
+  /* Base surfaces */
+  --bg: #0a0e13;          /* deep space */
+  --bg-2: #0e141b;        /* card/panel */
+  --hud: #121a24;         /* module body */
+  --line: #332c1c;        /* hairlines/dividers */
+
+  /* Accents (amber/gold primary) */
+  --accent: #ffb547;      /* warm amber highlight */
+  --glow:   #FFBB1B;      /* golden holo lines */
+  --glow-2: #FFBB1B;      /* softer highlight */
+  
+  /* Text */
+  --text:  #FFBB1B;       /* light parchment ink */
+  --muted: #c69100;       /* faded yellow-gray */
+
+  /* Status (slightly shifted to warm spectrum) */
+  --warn: #ffd87f;
+  --good: #b9ffb0;
+  --err:  #ff8080;
+
+  /* Shape language */
+  --corner: 22px;         
+  --radius: 6px;          
+
+  /* FX (glows now golden, not cyan) */
+  --scan: rgba(255, 226, 160, 0.04);                 
+  --grid: rgba(255, 200, 100, .08);                
+  --border: 1px solid rgba(255, 200, 120, .25);    
+  --neon: 0 0 10px rgba(255,200,120,.35), inset 0 0 1px rgba(255,200,120,.55);
+
+  /* Extras */
+  --accent-glow: 0 0 20px rgba(255, 154, 71, 0.45);
+  --focus-ring: 0 0 0 2px rgba(255, 181, 71, 0.45), 0 0 1px 2px rgba(240, 146, 6, 0.65);
+  --panel-grad: linear-gradient(180deg, rgba(255,240,200,.025) 0%, rgba(0,0,0,0) 60%);
+}
+
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--text);
+  font-family:"Aldrich", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  letter-spacing:.2px;
+  background:
+    radial-gradient(1200px 700px at 120% -10%, rgba(255,200,87,.05), transparent 55%),
+    radial-gradient(1400px 1000px at -20% -20%, rgba(18,227,255,.06), transparent 60%),
+    var(--bg);
+}
+
+/* Layout */
+.wrap{max-width:1160px; margin:32px auto; padding:0 18px}
+
+/* ====== Console Shell ====== */
+.console{
+  position:relative; overflow:hidden;
+  background:linear-gradient(180deg, var(--hud), var(--bg-2));
+  border:var(--border); border-radius:var(--radius);
+  box-shadow:0 30px 60px rgba(0,0,0,.6);
+}
+.console:before{ /* scanlines */
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background:
+    repeating-linear-gradient(0deg, var(--scan) 0 1px, transparent 3px 5px),
+    linear-gradient(180deg, transparent, rgba(0,0,0,.2));
+  mix-blend-mode:screen;
+}
+.console:after{ /* holo grid fade */
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.33;
+  background:
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 50px 51px),
+    repeating-linear-gradient(0deg,  var(--grid) 0 1px, transparent 50px 51px);
+  mask:linear-gradient(#000,transparent 90%);
+}
+
+/* ====== Header ====== */
+.hdr{
+  display:flex; align-items:center; gap:16px;
+  padding:16px 16px 10px; border-bottom:var(--border);
+  background:linear-gradient(180deg, rgba(18,227,255,.06), transparent);
+}
+.mark{
+  width:54px; height:54px; display:grid; place-items:center;
+  border:var(--border); border-radius:8px; position:relative;
+}
+.mark:before,.mark:after{
+  content:""; position:absolute; width:14px; height:14px;
+  border:2px solid var(--glow);
+  filter:drop-shadow(0 0 6px rgba(18,227,255,.6));
+}
+.mark:before{left:-8px; top:-8px; border-right:0; border-bottom:0}
+.mark:after{right:-8px; bottom:-8px; border-left:0; border-top:0}
+.mark svg{width:24px; height:24px; fill:var(--glow)}
+h1{margin:0; font-size:1.3rem; text-transform:uppercase; letter-spacing:.14em}
+.sub{font-family:"Share Tech Mono", ui-monospace; color:var(--muted); font-size:.9rem}
+
+/* ====== Control Tiles (BFII-style Options Grid) ====== */
+.controls{
+  display:grid; gap:14px; padding:14px; border-bottom:var(--border);
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+.tile{
+  position:relative; padding:14px; min-height:90px;
+  background:linear-gradient(180deg,#0b0f13,#090c10);
+  border:var(--border); border-radius:8px; box-shadow:var(--neon);
+  display:flex; flex-direction:column; gap:10px; justify-content:center;
+}
+.tile .label{font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.tile .content{display:flex; gap:8px; align-items:center}
+.tile .content input[type=text]{
+  flex:1; min-width:0;
+  padding:10px 12px; border:1px solid rgba(51,208,255,.16);
+  border-radius:8px; outline:none;
+  background:linear-gradient(180deg,#0a0f13,#070a0c); color:var(--text);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+}
+.tile .actions{display:flex; gap:8px}
+
+/* ====== Buttons ====== */
+.btn{
+  position:relative; padding:10px 14px;
+  border:1px solid rgba(51,208,255,.28);
+  background:linear-gradient(180deg, #0c1a20, #081015);
+  color:#d9f5ff; text-transform:uppercase; letter-spacing:.1em; font-size:.8rem;
+  cursor:pointer; border-radius:8px;
+  box-shadow:inset 0 0 0 1px rgba(51,208,255,.35), 0 8px 18px rgba(0,0,0,.45);
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.btn:hover{box-shadow:inset 0 0 0 1px rgba(51,208,255,.55), 0 10px 24px rgba(0,0,0,.55)}
+.btn:focus-visible{outline:0; box-shadow:var(--focus-ring), inset 0 0 0 1px rgba(51,208,255,.55)}
+
+.btn-primary{
+  border-color:rgba(255,157,27,.55);
+  background:linear-gradient(180deg, #0e262f, #0b1c24);
+  box-shadow:var(--accent-glow), inset 0 0 0 1px rgba(255,157,27,.45), 0 8px 18px rgba(0,0,0,.45);
+}
+.btn-ghost{background:linear-gradient(180deg, #0a0d10, #07090b); color:var(--text)}
+.btn-amber{border-color:rgba(255,200,87,.4); box-shadow:inset 0 0 0 1px rgba(255,200,87,.35), 0 8px 18px rgba(0,0,0,.45)}
+
+/* ====== Secondary Bars ====== */
+.bar{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  padding:12px 16px; border-bottom:var(--border);
+}
+
+/* Status */
+.status{padding:10px 16px; font-family:"Share Tech Mono", ui-monospace; color:var(--muted)}
+.ok{color:var(--good)} .warn{color:var(--warn)} .err{color:var(--err)}
+
+/* ====== Screen ====== */
+.screen{position:relative; padding:16px;
+  background:radial-gradient(800px 220px at 50% -60%, rgba(18,227,255,.08), transparent 60%),
+             linear-gradient(180deg, var(--bg-2), #07090b);
+}
+.viewport{
+  position:relative; background:#000; overflow:hidden;
+  border:var(--border); border-radius:10px;
+}
+.viewport:before,.viewport:after{
+  content:""; position:absolute; width:var(--corner); height:var(--corner);
+  border:2px solid var(--glow); filter:drop-shadow(0 0 8px rgba(18,227,255,.5));
+}
+.viewport:before{top:8px; left:8px; border-right:0; border-bottom:0}
+.viewport:after{bottom:8px; right:8px; border-left:0; border-top:0}
+#player{width:100%; aspect-ratio:16/9; background:#000}
+
+/* Details / links */
+details{margin:14px 16px; border:var(--border); border-radius:8px; padding:12px; background:linear-gradient(180deg,#0b0f13,#06080a)}
+summary{cursor:pointer}
+a{color:var(--glow)}
+
+/* Footer */
+.foot{padding:14px 16px; color:var(--muted)}
+
+/* Responsive */
+@media (max-width: 1024px){
+  .controls{grid-template-columns: repeat(3, 1fr);} 
+}
+@media (max-width: 640px){
+  .controls{grid-template-columns: 1fr;} 
+}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="console">
+      <!-- HEADER -->
+      <div class="hdr">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img" aria-label="HUD mark"><path d="M3 6.5c0-1.1.9-2 2-2h14a2 2 0 0 1 2 2v8.8a2 2 0 0 1-1.1 1.8l-6.4 3.2a2 2 0 0 1-1.8 0L4.1 17.1A2 2 0 0 1 3 15.3V6.5zm6.8 2.2v4.6l4.8-2.3-4.8-2.3z"/></svg>
+        </div>
+        <div>
+          <h1>WATCH TOGETHER — BFII HUD</h1>
+          <div class="sub">Synchronized playback · Cyan chrome · Amber focus</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS GRID (BFII options-style tiles) -->
+      <div class="controls">
+        <div class="tile">
+          <div class="label">Room</div>
+          <div class="content">
+            <input id="room" type="text" placeholder="e.g., hangar-bay-32" />
+          </div>
+          <div class="actions">
+            <button id="join" class="btn btn-primary">Join</button>
+            <button id="copy" class="btn btn-ghost">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="label">Share Link</div>
+          <div class="content">
+            <input id="shareUrl" type="text" readonly />
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="label">Video</div>
+          <div class="content">
+            <input id="video" type="text" placeholder="Paste YouTube link or ID" />
+          </div>
+          <div class="actions">
+            <button id="load" class="btn btn-amber">Load</button>
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="label">Playback</div>
+          <div class="actions">
+            <button id="play" class="btn btn-primary">Play</button>
+            <button id="pause" class="btn btn-ghost">Pause</button>
+            <button id="sync" class="btn btn-ghost">Re-Sync</button>
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="label">Status</div>
+          <div id="status" class="status">Not connected yet.</div>
+        </div>
+          
+        <div class="tile">
+          <div class="label">Presence</div>
+          <div id="online" class="status">0 people online</div>
+        </div>
+      </div>
+
+      <!-- VIEWPORT -->
+      <div class="screen">
+        <div class="viewport">
+          <div id="player"></div>
+        </div>
+      </div>
+
+      <!-- HELP -->
+      <details>
+        <summary><strong>First-time setup (Firebase)</strong></summary>
+        <ol>
+          <li>Create a free Firebase project → Add Web App → copy the config → paste below where it says <code>YOUR_*</code>.</li>
+          <li>Enable <em>Realtime Database</em> + <em>Anonymous Auth</em>.</li>
+        </ol>
+        <pre>{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}</pre>
+      </details>
+
+      <div class="foot">No tracking · No ads · Built for learning.</div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <!-- Firebase (compat builds for easy script tags) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+/* ===== Firebase config (replace with yours) ===== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzY-qrqfaryI-E8Gbw_q4mHU42dDOtcMQ",
+    authDomain: "watch-togerther-demo.firebaseapp.com",
+    databaseURL: "https://watch-togerther-demo-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "watch-togerther-demo",
+    storageBucket: "watch-togerther-demo.firebasestorage.app",
+    messagingSenderId: "683005952191",
+    appId: "1:683005952191:web:7c238ef2fb5842f4d9460a"
+  };
+/* =============================================== */
+
+function extractVideoId(input){
+  if(!input) return null; try{
+    if(/^[a-zA-Z0-9_-]{11}$/.test(input)) return input.trim();
+    const u=new URL(input); if(u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+    if(u.searchParams.get("v")) return u.searchParams.get("v");
+    if(u.pathname.startsWith("/shorts/")) return u.pathname.split("/")[2];
+  }catch(e){} return input.trim();
+}
+
+let app, db, auth;
+let roomId=new URLSearchParams(location.search).get("room")||"";
+let signalsRef=null; let myId=Math.random().toString(36).slice(2);
+let presenceListRef=null; let myPresenceRef=null;
+let player=null; let ready=false; let connected=false; let squelchUntil=0; let lastLocalTime=0;
+
+const roomEl=document.getElementById("room");
+const shareEl=document.getElementById("shareUrl");
+const statusEl=document.getElementById("status");
+const videoEl=document.getElementById("video");
+const onlineEl=document.getElementById("online");
+
+if(roomId){roomEl.value=roomId; updateShareLink();}
+
+// UI actions
+ document.getElementById("join").onclick=()=>{ roomId=roomEl.value.trim()||"demo"; updateShareLink(); connect(); };
+ document.getElementById("copy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(shareEl.value); toast("Link copied!","ok"); }
+  catch{ toast("Copy failed. Select and copy.","warn"); }
+ };
+ document.getElementById("load").onclick=()=>{
+  const id=extractVideoId(videoEl.value.trim()); if(!id||!ready||!connected) return;
+  player.loadVideoById(id); send({type:"load", id});
+ };
+ document.getElementById("play").onclick=()=>{
+  if(!ready||!connected) return; const t=player.getCurrentTime();
+  player.playVideo(); send({type:"play", t});
+ };
+ document.getElementById("pause").onclick=()=>{
+  if(!ready||!connected) return; const t=player.getCurrentTime();
+  player.pauseVideo(); send({type:"pause", t});
+ };
+ document.getElementById("sync").onclick=()=>{
+  if(!ready||!connected) return; requestState();
+ };
+
+function updateShareLink(){
+  const url=new URL(location.href);
+  url.searchParams.set("room", roomEl.value.trim()||"demo");
+  shareEl.value=url.toString();
+}
+function toast(msg,cls="status"){ statusEl.textContent=msg; statusEl.className=cls; }
+
+// YouTube
+window.onYouTubeIframeAPIReady=function(){
+  player=new YT.Player('player',{
+    height:'360', width:'640', videoId:'dQw4w9WgXcQ',
+    playerVars:{ playsinline:1 },
+    events:{ onReady:()=>{ ready=true; lastLocalTime=player.getCurrentTime(); maybeAutoRequestState(); },
+             onStateChange:onPlayerStateChange }
+  });
+};
+
+function onPlayerStateChange(e){
+  const now=Date.now(); const state=e.data; const ct=player.getCurrentTime();
+  if(now<squelchUntil) return;
+  if(state===YT.PlayerState.PLAYING){ send({type:"play", t:ct}); }
+  else if(state===YT.PlayerState.PAUSED){ send({type:"pause", t:ct}); }
+  else if(state===YT.PlayerState.BUFFERING){
+    if(Math.abs(ct-lastLocalTime)>1.0){ send({type:"seek", t:ct}); }
+  }
+  lastLocalTime=ct;
+}
+
+// Firebase connect + presence + signals
+async function connect(){
+  if(!roomId){ toast("Enter a room name.","warn"); return; }
+  try{ app=firebase.initializeApp(firebaseConfig);}catch(e){ app=firebase.app(); }
+  auth=firebase.auth(); db=firebase.database();
+  await auth.signInAnonymously();
+
+  // Signals for sync
+  signalsRef=db.ref("rooms/"+roomId+"/signals");
+  signalsRef.limitToLast(100).on("child_added", handleSignal);
+
+  // Presence tracking
+  presenceListRef = db.ref("rooms/"+roomId+"/presence");
+  myPresenceRef = presenceListRef.push();
+  myPresenceRef.onDisconnect().remove();
+  myPresenceRef.set({ uid: myId, joinedAt: firebase.database.ServerValue.TIMESTAMP });
+
+  // Live count
+  presenceListRef.on("value", snap=>{
+    const count = snap.numChildren();
+    onlineEl.textContent = count+" "+(count===1?"person":"people")+" online";
+  });
+
+  connected=true;
+  toast("Connected to room \u201C"+roomId+"\u201D. Share the link below!","ok");
+  maybeAutoRequestState();
+}
+
+function handleSignal(snap){
+  const data=snap.val(); if(!data||data.sender===myId) return;
+  const serverTs=data.ts||Date.now(); const lag=Math.max(0,(Date.now()-serverTs)/1000);
+  if(!ready) return; squelchUntil=Date.now()+600;
+
+  if(data.type==="load"){
+    const vid=data.id;
+    const currentId=player?.getVideoData()?.video_id;
+    if(player && currentId!==vid){ player.loadVideoById(vid); toast("Loaded from partner","ok"); }
+  }
+  else if(data.type==="play"){
+    const target=data.t+lag; if(Math.abs(player.getCurrentTime()-target)>0.35){ player.seekTo(target,true);} 
+    player.playVideo(); toast("Playing (synced)","ok");
+  }
+  else if(data.type==="pause"){
+    if(Math.abs(player.getCurrentTime()-data.t)>0.25){ player.seekTo(data.t,true);} 
+    player.pauseVideo(); toast("Paused (synced)","ok");
+  }
+  else if(data.type==="seek"){
+    player.seekTo(data.t,true); toast("Seeked (synced)","ok");
+  }
+  else if(data.type==="request_state"){
+    // Reply with our current state
+    if(ready){
+      send({ type:"state", id: player.getVideoData().video_id, 
+             t: player.getCurrentTime(), 
+             playing: player.getPlayerState() === YT.PlayerState.PLAYING });
+    }
+  }
+  else if(data.type==="state"){
+    const currentId=player?.getVideoData()?.video_id;
+    if(player && currentId!==data.id){
+      player.loadVideoById(data.id, data.t);
+    } else {
+      player.seekTo(data.t,true);
+    }
+    if(data.playing) player.playVideo(); else player.pauseVideo();
+    toast("State synced","ok");
+  }
+}
+
+function send(payload){
+  if(!signalsRef) return;
+  const full=Object.assign({},payload,{ sender:myId, ts: firebase.database.ServerValue.TIMESTAMP});
+  signalsRef.push(full);
+}
+
+function requestState(){ send({ type:"request_state" }); }
+function maybeAutoRequestState(){ if(ready && connected){ requestState(); } }
+
+// Auto-connect if URL had ?room=
+if(roomId) connect();
+  </script>
+</body>
+</html>
